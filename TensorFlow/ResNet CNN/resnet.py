@@ -1,22 +1,14 @@
-from __future__ import print_function
-from sklearn.model_selection import train_test_split
-from keras.preprocessing.image import ImageDataGenerator
+from __future__ import absolute_import, division, print_function, unicode_literals
+from tensorflow.keras.utils import multi_gpu_model
 from keras.regularizers import l2
 from keras import backend as K
-from keras.models import Model
-from keras.datasets import cifar10
-from PIL import Image
+
 import tensorflow as tf
-import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
 import keras
 import glob
 import os
 
-BATCH_SIZE = 32
-EPOCHS = 200
-NUM_CLASSES = 5
 
 # Model parameter
 # ----------------------------------------------------------------------------
@@ -32,25 +24,21 @@ NUM_CLASSES = 5
 # ResNet164 |27(18)| -----     | 94.07     | -----     | 94.54     | ---(---)
 # ResNet1001| (111)| -----     | 92.39     | -----     | 95.08+-.14| ---(---)
 # ---------------------------------------------------------------------------
-n = 6
-version = 2
-depth = n * 9 + 2
-subtract_pixel_mean = True
-model_type = 'ResNet%dv%d' % (depth, version)
 
-#Image display function
-def image_sample(sample, label, size):
-    i = 0
-    plt.figure(figsize=(size,size))
-    for image in sample:
-        plt.subplot(1,2,i+1)
-        plt.xticks([])
-        plt.yticks([])
-        plt.grid(False)
-        plt.imshow(image, cmap=plt.cm.binary)
-        plt.xlabel(label[i])
-        i += 1
-    plt.show()
+IMG_SIZEW = 512
+IMG_SIZEH = 512
+IMG_CHANS = 3
+NUM_CLASSES = 5
+NUM_GPUS = 2
+multigpu = False
+n = 6
+
+INPUT_SHAPE = (IMG_SIZEH, IMG_SIZEW, IMG_CHANS)
+
+VERSION = 2
+DEPTH = n * 9 + 2
+
+model_type = 'ResNet%dv%d' % (DEPTH, VERSION)
 
 #Loss rate scheduler function. Loss rate determined by epoch number
 def lr_schedule(EPOCH):
@@ -162,3 +150,40 @@ def resnet(input_shape, depth, num_classes=NUM_CLASSES):
 
         return model
 #End of ResNet definition
+
+#Define our model save directory
+save_dir = os.path.join(os.getcwd(), 'saved_models')
+model_name = 'resnet_model.{epoch:03d}.h5'
+if not os.path.isdir(save_dir):
+    os.makedirs(save_dir)
+filepath = os.path.join(save_dir, model_name)
+
+# Prepare callbacks for model saving and for learning rate adjustment.
+checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=filepath,
+                                                monitor='val_acc',
+                                                verbose=1,
+                                                save_best_only=True)
+
+lr_scheduler = tf.keras.callbacks.LearningRateScheduler(lr_schedule)
+
+lr_reducer = tf.keras.callbacks.ReduceLROnPlateau(factor=np.sqrt(0.1),
+                                                  cooldown=0,
+                                                  patience=5,
+                                                  min_lr=0.5e-6)
+
+callbacks = [checkpoint, lr_reducer, lr_scheduler]
+
+#Assign our ResNet model and define our optimiser
+model = resnet(input_shape=INPUT_SHAPE, depth=DEPTH)
+opt = tf.keras.optimizers.Adam
+
+#Enable multi GPU if flagged true
+if multigpu:
+    model = multi_gpu_model(model, gpus=NUM_GPUS, cpu_merge=True)
+
+#Compile and print model summary
+model.compile(loss='categorical_crossentropy',
+              optimizer=opt(lr=lr_schedule(0)),
+              metrics=['accuracy'])
+
+model.summary()
