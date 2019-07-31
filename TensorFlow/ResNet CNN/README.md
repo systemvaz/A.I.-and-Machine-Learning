@@ -23,7 +23,7 @@ Depth of the ResNet v2 can be defined by modifying the 'n' variable in the pytho
 
 **NUM_CLASSES** number of image classification labels.
 
-**NUM_GPUS** only matters is 'multigpu' set to True, define the number of graphics cards to use in training.
+**NUM_GPUS** only matters if 'multigpu' set to True, define the number of graphics cards to use in training.
 
 **multigpu** enable/disable multiple graphics cards for training, either False or True.
 
