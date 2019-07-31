@@ -11,3 +11,8 @@ Depth of the ResNet v2 can be defined by modifying the 'n' variable in the pytho
 * ResNet110 v2 	  **(n=12)**
 * ResNet164 v2 	  **(n=18)**
 * ResNet1001 v2 	**(n=111)**
+
+## Key Variables
+**IMG_SIZEW** width of image in pixels
+**IMG_SIZEH** height of image in pixels
+**NUM_CLASSES** number of image classification labels
