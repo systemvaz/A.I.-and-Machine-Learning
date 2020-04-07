@@ -1,6 +1,6 @@
 # TensorFlow ResNet Implementation
 
-This is a TensorFlow implementation of a ResNet convolutional neural network for image recognition and classification. 
+This is a TensorFlow Keras implementation of a ResNet convolutional neural network for image recognition and classification. 
 I have adapted it from the v2 Keras implementation at: https://keras.io/examples/cifar10_resnet/
 
 There is additional support added for multi-GPU training if required. See the section **Key Variables** below for enabling options.
